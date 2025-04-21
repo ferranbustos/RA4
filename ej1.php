@@ -1,101 +1,93 @@
-<?php 
+<?php
 session_start();
 
-// Guardamos el nombre del trabajador si aún no está
-if (!isset($_SESSION['worker'])) {
-    $_SESSION['worker'] = "";
+// Si es la primera vez que se entra, se guardan estos valores
+if (!isset($_SESSION['trabajador'])) {
+    $_SESSION['trabajador'] = "";
 }
 
-// Guardamos el inventario inicial si aún no está
-if (!isset($_SESSION['inventory'])) {
-    $_SESSION['inventory'] = [
-        'milk' => 10,
-        'soft_drink' => 10
+if (!isset($_SESSION['productos'])) {
+    $_SESSION['productos'] = [
+        "leche" => 10,
+        "refresco" => 10
     ];
 }
 
-$error = ""; // Variable para mostrar errores
-$success = ""; // Mensaje de éxito
+$mensaje = ""; // Para mostrar texto al usuario
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (!empty($_POST['worker'])) {
-        $_SESSION['worker'] = htmlspecialchars($_POST['worker']);
+// Cuando se envía el formulario
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Guardar el nombre del trabajador
+    if (!empty($_POST["trabajador"])) {
+        $_SESSION["trabajador"] = $_POST["trabajador"];
     }
 
-    if (!empty($_POST['quantity']) && !empty($_POST['product']) && !empty($_POST['action'])) {
-        $product = $_POST['product'];
-        $quantity = intval($_POST['quantity']);
-        $action = $_POST['action'];
+    // Recoger producto, cantidad y acción
+    $producto = $_POST["producto"];
+    $cantidad = intval($_POST["cantidad"]);
+    $accion = $_POST["accion"];
 
-        if ($action == 'add') {
-            $_SESSION['inventory'][$product] += $quantity;
-            $success = "Se han añadido $quantity unidades de $product.";
-        } elseif ($action == 'remove') {
-            if ($_SESSION['inventory'][$product] >= $quantity) {
-                $_SESSION['inventory'][$product] -= $quantity;
-                $success = "Se han quitado $quantity unidades de $product.";
-            } else {
-                $error = "ERROR: No puedes quitar más unidades de las que hay.";
-            }
-        } elseif ($action == 'reset') {
-            $_SESSION['inventory'] = [
-                'milk' => 10,
-                'soft_drink' => 10
-            ];
-            $success = "Inventario reiniciado.";
+    if ($accion == "añadir") {
+        $_SESSION["productos"][$producto] += $cantidad;
+        $mensaje = "Se han añadido $cantidad unidades de $producto.";
+    }
+
+    if ($accion == "quitar") {
+        if ($_SESSION["productos"][$producto] >= $cantidad) {
+            $_SESSION["productos"][$producto] -= $cantidad;
+            $mensaje = "Se han quitado $cantidad unidades de $producto.";
+        } else {
+            $mensaje = "Error: No hay suficientes unidades de $producto.";
         }
+    }
+
+    if ($accion == "reiniciar") {
+        $_SESSION['productos'] = [
+            "leche" => 10,
+            "refresco" => 10
+        ];
+        $mensaje = "Inventario reiniciado.";
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de supermercado</title>
+    <title>Inventario Supermercado</title>
 </head>
 <body>
 
-    <h1>Gestión de supermercado</h1>
+    <h1>Gestión de inventario</h1>
 
-    <!-- Formulario principal -->
     <form method="post">
-        <label>Nombre del trabajador: </label>
-        <input type="text" name="worker" value="<?= $_SESSION['worker'] ?>" required>
+        <label>Nombre del trabajador:</label>
+        <input type="text" name="trabajador" value="<?= $_SESSION['trabajador'] ?>" required>
         <br><br>
 
         <label>Producto:</label>
-        <select name="product">
-            <option value="soft_drink">Refresco</option>
-            <option value="milk">Leche</option>
+        <select name="producto">
+            <option value="leche">Leche</option>
+            <option value="refresco">Refresco</option>
         </select>
         <br><br>
 
         <label>Cantidad:</label>
-        <input type="number" name="quantity" min="1" required>
+        <input type="number" name="cantidad" min="1" required>
         <br><br>
 
-        <button type="submit" name="action" value="add">Añadir</button>
-        <button type="submit" name="action" value="remove">Quitar</button>
-        <button type="submit" name="action" value="reset">Reiniciar</button>
+        <button type="submit" name="accion" value="añadir">Añadir</button>
+        <button type="submit" name="accion" value="quitar">Quitar</button>
+        <button type="submit" name="accion" value="reiniciar">Reiniciar</button>
     </form>
 
-    <hr>
+    <h2>Estado del inventario:</h2>
+    <p>Trabajador: <?= $_SESSION["trabajador"] ?></p>
+    <p>Leche: <?= $_SESSION["productos"]["leche"] ?> unidades</p>
+    <p>Refresco: <?= $_SESSION["productos"]["refresco"] ?> unidades</p>
 
-    <!-- Mostramos mensajes visuales si hay -->
-    <?php if (!empty($error)): ?>
-        <p style="color: red;"><?= $error ?></p>
-    <?php endif; ?>
-
-    <?php if (!empty($success)): ?>
-        <p style="color: green;"><?= $success ?></p>
-    <?php endif; ?>
-
-    <!-- Mostramos el estado del inventario -->
-    <h2>Inventario actual:</h2>
-    <p>Trabajador: <strong><?= $_SESSION['worker'] ?></strong></p>
-    <p>Leche: <?= $_SESSION['inventory']['milk'] ?> unidades</p>
-    <p>Refrescos: <?= $_SESSION['inventory']['soft_drink'] ?> unidades</p>
+    <?php if (!empty($mensaje)) echo "<p><strong>$mensaje</strong></p>"; ?>
 
 </body>
 </html>
