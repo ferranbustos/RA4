@@ -1,26 +1,30 @@
 <?php
 session_start();
 
-// Inicializar array si no existe en la sesión
+// Creamos array de números si no está
 if (!isset($_SESSION['numeros'])) {
     $_SESSION['numeros'] = [10, 20, 30];
 }
 
-$media = null; // Variable para almacenar la media
+$media = null;
+$mensaje = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['posicion']) && isset($_POST['nuevo_valor'])) {
+    // Si se pulsa el botón de modificar
+    if (isset($_POST['modificar'])) {
         $posicion = intval($_POST['posicion']);
         $nuevo_valor = intval($_POST['nuevo_valor']);
 
-        // Validar que la posición existe en el array
         if (array_key_exists($posicion, $_SESSION['numeros'])) {
             $_SESSION['numeros'][$posicion] = $nuevo_valor;
+            $mensaje = "Se ha modificado la posición $posicion con el valor $nuevo_valor.";
         }
     }
 
+    // Si se pulsa el botón de calcular media
     if (isset($_POST['calcular_media'])) {
         $media = array_sum($_SESSION['numeros']) / count($_SESSION['numeros']);
+        $mensaje = "Media calculada correctamente.";
     }
 }
 ?>
@@ -29,15 +33,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modificar Array</title>
 </head>
 <body>
 
     <h1>Modificar valores del Array</h1>
 
+    <!-- Mostramos el array actual -->
     <p>Array actual: <?= implode(", ", $_SESSION['numeros']) ?></p>
 
+    <!-- Mensaje visual -->
+    <?php if (!empty($mensaje)): ?>
+        <p style="color: green;"><?= $mensaje ?></p>
+    <?php endif; ?>
+
+    <!-- Formulario para modificar -->
     <form method="post">
         <label>Selecciona una posición:</label>
         <select name="posicion">
@@ -51,13 +61,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <input type="number" name="nuevo_valor" required>
         <br><br>
 
-        <button type="submit">Modificar</button>
+        <button type="submit" name="modificar">Modificar</button>
     </form>
 
+    <!-- Botón para calcular la media -->
     <form method="post">
         <button type="submit" name="calcular_media">Calcular Media</button>
     </form>
 
+    <!-- Mostrar la media si se ha calculado -->
     <?php if ($media !== null): ?>
         <h2>Media: <?= number_format($media, 2) ?></h2>
     <?php endif; ?>
