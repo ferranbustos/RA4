@@ -1,58 +1,50 @@
 <?php
 session_start();
 
-// Creamos array de números si no está
+// Si el array no existe, lo creamos con 3 números
 if (!isset($_SESSION['numeros'])) {
     $_SESSION['numeros'] = [10, 20, 30];
 }
 
-$media = null;
 $mensaje = "";
+$media = null;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Si se pulsa el botón de modificar
-    if (isset($_POST['modificar'])) {
-        $posicion = intval($_POST['posicion']);
-        $nuevo_valor = intval($_POST['nuevo_valor']);
+// Si se pulsa modificar
+if (isset($_POST['modificar'])) {
+    $posicion = intval($_POST['posicion']);
+    $nuevo = intval($_POST['nuevo_valor']);
 
-        if (array_key_exists($posicion, $_SESSION['numeros'])) {
-            $_SESSION['numeros'][$posicion] = $nuevo_valor;
-            $mensaje = "Se ha modificado la posición $posicion con el valor $nuevo_valor.";
-        }
+    if (isset($_SESSION['numeros'][$posicion])) {
+        $_SESSION['numeros'][$posicion] = $nuevo;
+        $mensaje = "Valor de la posición $posicion cambiado a $nuevo.";
     }
+}
 
-    // Si se pulsa el botón de calcular media
-    if (isset($_POST['calcular_media'])) {
-        $media = array_sum($_SESSION['numeros']) / count($_SESSION['numeros']);
-        $mensaje = "Media calculada correctamente.";
-    }
+// Si se pulsa calcular media
+if (isset($_POST['media'])) {
+    $media = array_sum($_SESSION['numeros']) / count($_SESSION['numeros']);
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>Modificar Array</title>
 </head>
 <body>
 
-    <h1>Modificar valores del Array</h1>
+    <h1>Modificar valores de un array</h1>
 
-    <!-- Mostramos el array actual -->
-    <p>Array actual: <?= implode(", ", $_SESSION['numeros']) ?></p>
+    <p>Valores actuales: <?= implode(", ", $_SESSION['numeros']) ?></p>
 
-    <!-- Mensaje visual -->
-    <?php if (!empty($mensaje)): ?>
-        <p style="color: green;"><?= $mensaje ?></p>
-    <?php endif; ?>
+    <?php if (!empty($mensaje)) echo "<p>$mensaje</p>"; ?>
 
-    <!-- Formulario para modificar -->
     <form method="post">
-        <label>Selecciona una posición:</label>
+        <label>Posición a cambiar:</label>
         <select name="posicion">
-            <?php foreach ($_SESSION['numeros'] as $indice => $valor): ?>
-                <option value="<?= $indice ?>">Posición <?= $indice ?> (<?= $valor ?>)</option>
+            <?php foreach ($_SESSION['numeros'] as $i => $num): ?>
+                <option value="<?= $i ?>">Posición <?= $i ?> (<?= $num ?>)</option>
             <?php endforeach; ?>
         </select>
         <br><br>
@@ -62,17 +54,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <br><br>
 
         <button type="submit" name="modificar">Modificar</button>
+        <button type="submit" name="media">Calcular media</button>
     </form>
 
-    <!-- Botón para calcular la media -->
-    <form method="post">
-        <button type="submit" name="calcular_media">Calcular Media</button>
-    </form>
-
-    <!-- Mostrar la media si se ha calculado -->
     <?php if ($media !== null): ?>
         <h2>Media: <?= number_format($media, 2) ?></h2>
     <?php endif; ?>
 
 </body>
 </html>
+
