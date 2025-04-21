@@ -1,122 +1,125 @@
 <?php
 session_start();
 
-// Inicializar la lista de la compra si no existe
-if (!isset($_SESSION['lista_compra'])) {
-    $_SESSION['lista_compra'] = [];
+if (!isset($_SESSION['lista'])) {
+    $_SESSION['lista'] = [];
 }
 
-$total_compra = 0;
+$mensaje = "";
+$total = 0;
+$modo_editar = false;
+$editar_indice = -1;
 
-// Agregar un nuevo ítem a la lista
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['nombre']) && isset($_POST['cantidad']) && isset($_POST['precio'])) {
-        $nombre = htmlspecialchars($_POST['nombre']);
-        $cantidad = intval($_POST['cantidad']);
-        $precio = floatval($_POST['precio']);
-        
-        if (!empty($nombre) && $cantidad > 0 && $precio > 0) {
-            $_SESSION['lista_compra'][] = [
-                'nombre' => $nombre,
-                'cantidad' => $cantidad,
-                'precio' => $precio,
-                'total' => $cantidad * $precio
-            ];
-        }
-    }
+// Añadir producto
+if (isset($_POST['añadir'])) {
+    $nombre = $_POST['nombre'];
+    $cantidad = intval($_POST['cantidad']);
+    $precio = floatval($_POST['precio']);
 
-    // Editar un ítem
-    if (isset($_POST['editar_indice']) && isset($_POST['editar_cantidad']) && isset($_POST['editar_precio'])) {
-        $indice = intval($_POST['editar_indice']);
-        $nueva_cantidad = intval($_POST['editar_cantidad']);
-        $nuevo_precio = floatval($_POST['editar_precio']);
-
-        if (isset($_SESSION['lista_compra'][$indice])) {
-            $_SESSION['lista_compra'][$indice]['cantidad'] = $nueva_cantidad;
-            $_SESSION['lista_compra'][$indice]['precio'] = $nuevo_precio;
-            $_SESSION['lista_compra'][$indice]['total'] = $nueva_cantidad * $nuevo_precio;
-        }
-    }
-
-    // Eliminar un ítem
-    if (isset($_POST['borrar_indice'])) {
-        $indice = intval($_POST['borrar_indice']);
-        if (isset($_SESSION['lista_compra'][$indice])) {
-            unset($_SESSION['lista_compra'][$indice]);
-            $_SESSION['lista_compra'] = array_values($_SESSION['lista_compra']); // Reindexar
-        }
+    if ($nombre && $cantidad > 0 && $precio > 0) {
+        $_SESSION['lista'][] = [
+            'nombre' => $nombre,
+            'cantidad' => $cantidad,
+            'precio' => $precio,
+            'total' => $cantidad * $precio
+        ];
+        $mensaje = "Producto añadido.";
     }
 }
 
-// Calcular el total de la compra
-foreach ($_SESSION['lista_compra'] as $item) {
-    $total_compra += $item['total'];
+// Preparar edición
+if (isset($_POST['editar'])) {
+    $editar_indice = $_POST['indice'];
+    $modo_editar = true;
+}
+
+// Guardar cambios al producto
+if (isset($_POST['actualizar'])) {
+    $indice = $_POST['indice'];
+    $cantidad = intval($_POST['cantidad']);
+    $precio = floatval($_POST['precio']);
+
+    if (isset($_SESSION['lista'][$indice])) {
+        $_SESSION['lista'][$indice]['cantidad'] = $cantidad;
+        $_SESSION['lista'][$indice]['precio'] = $precio;
+        $_SESSION['lista'][$indice]['total'] = $cantidad * $precio;
+        $mensaje = "Producto actualizado.";
+    }
+}
+
+// Borrar producto
+if (isset($_POST['borrar'])) {
+    $indice = $_POST['indice'];
+    unset($_SESSION['lista'][$indice]);
+    $_SESSION['lista'] = array_values($_SESSION['lista']);
+    $mensaje = "Producto eliminado.";
+}
+
+// Calcular total
+foreach ($_SESSION['lista'] as $item) {
+    $total += $item['total'];
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de la Compra</title>
 </head>
 <body>
 
-    <h1>Lista de la Compra</h1>
+    <h1>Lista de la compra</h1>
 
-    <form method="post">
-        <label>Nombre del producto:</label>
-        <input type="text" name="nombre" required>
-        <br><br>
+    <?php if (!empty($mensaje)) echo "<p><strong>$mensaje</strong></p>"; ?>
 
-        <label>Cantidad:</label>
-        <input type="number" name="cantidad" min="1" required>
-        <br><br>
+    <?php if (!$modo_editar): ?>
+        <form method="post">
+            <label>Producto:</label>
+            <input type="text" name="nombre" required>
+            <label>Cantidad:</label>
+            <input type="number" name="cantidad" min="1" required>
+            <label>Precio:</label>
+            <input type="number" name="precio" step="0.01" min="0.01" required>
+            <button type="submit" name="añadir">Añadir</button>
+        </form>
+    <?php else: ?>
+        <form method="post">
+            <input type="hidden" name="indice" value="<?= $editar_indice ?>">
+            <label>Nueva cantidad:</label>
+            <input type="number" name="cantidad" min="1" value="<?= $_SESSION['lista'][$editar_indice]['cantidad'] ?>" required>
+            <label>Nuevo precio:</label>
+            <input type="number" name="precio" step="0.01" value="<?= $_SESSION['lista'][$editar_indice]['precio'] ?>" required>
+            <button type="submit" name="actualizar">Actualizar</button>
+        </form>
+    <?php endif; ?>
 
-        <label>Precio por unidad:</label>
-        <input type="number" step="0.01" name="precio" min="0.01" required>
-        <br><br>
-
-        <button type="submit">Añadir Producto</button>
-    </form>
-
-    <h2>Productos en la Lista</h2>
-
+    <h2>Productos:</h2>
     <table border="1">
         <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-            <th>Coste Total</th>
-            <th>Acciones</th>
+            <th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Total</th><th>Acciones</th>
         </tr>
-        <?php foreach ($_SESSION['lista_compra'] as $indice => $item): ?>
-        <tr>
-            <td><?= $item['nombre'] ?></td>
-            <td><?= $item['cantidad'] ?></td>
-            <td><?= number_format($item['precio'], 2) ?>€</td>
-            <td><?= number_format($item['total'], 2) ?>€</td>
-            <td>
-                <!-- Formulario para editar -->
-                <form method="post" style="display:inline;">
-                    <input type="hidden" name="editar_indice" value="<?= $indice ?>">
-                    <input type="number" name="editar_cantidad" min="1" value="<?= $item['cantidad'] ?>" required>
-                    <input type="number" step="0.01" name="editar_precio" min="0.01" value="<?= $item['precio'] ?>" required>
-                    <button type="submit">Editar</button>
-                </form>
-
-                <!-- Formulario para eliminar -->
-                <form method="post" style="display:inline;">
-                    <input type="hidden" name="borrar_indice" value="<?= $indice ?>">
-                    <button type="submit">Eliminar</button>
-                </form>
-            </td>
-        </tr>
+        <?php foreach ($_SESSION['lista'] as $i => $prod): ?>
+            <tr>
+                <td><?= $prod['nombre'] ?></td>
+                <td><?= $prod['cantidad'] ?></td>
+                <td><?= number_format($prod['precio'], 2) ?> €</td>
+                <td><?= number_format($prod['total'], 2) ?> €</td>
+                <td>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="indice" value="<?= $i ?>">
+                        <button type="submit" name="editar">Editar</button>
+                    </form>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="indice" value="<?= $i ?>">
+                        <button type="submit" name="borrar">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
         <?php endforeach; ?>
     </table>
 
-    <h3>Total de la compra: <?= number_format($total_compra, 2) ?>€</h3>
+    <h3>Total de la lista: <?= number_format($total, 2) ?> €</h3>
 
 </body>
 </html>
